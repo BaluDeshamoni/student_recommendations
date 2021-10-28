@@ -174,7 +174,7 @@ def main():
                     for row in results.iterrows():
                         rec_title = row[1][0]
                         rec_score = row[1][1]
-                        rec_url = row[1][2]
+                        rec_url = literal_eval(row[1][2])
                         rec_price = row[1][3]
                         rec_num_sub = row[1][4]
 
