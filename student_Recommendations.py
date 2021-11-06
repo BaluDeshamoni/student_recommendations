@@ -57,31 +57,64 @@ def get_internship_recommendation(profile, cosine_sim_mat, df, num_of_rec=10):
     result_df['similarity_score'] = selected_internship_scores
     final_recommended_internships = result_df[[
         'company', 'similarity_score', 'profile', 'Location', 'Stipend', 'Skills and Perks']]
-    return final_recommended_internships.head(num_of_rec)
+    return final_recommended_internships.head(num_of_rec), idx
+
+
+@st.cache
+def get_inter_internship_recommendation(idx, df):
+
+    df['clean_Skills and Perks'] = df['Skills and Perks'].apply(
+        nfx.remove_stopwords)
+    df['clean_Skills and Perks'] = df['clean_Skills and Perks'].apply(
+        nfx.remove_special_characters)
+    count_vect = CountVectorizer()
+    cv_mat = count_vect.fit_transform(df['clean_Skills and Perks'])
+
+    cosine_sim_mat = cosine_similarity(cv_mat)
+
+    sim_scores = list(enumerate(cosine_sim_mat[idx]))
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+    selected_internship_indices = [i[0] for i in sim_scores[1:]]
+    selected_internship_scores = [i[1] for i in sim_scores[1:]]
+
+    result_df = df.iloc[selected_internship_indices]
+    result_df['similarity_score'] = selected_internship_scores
+    final_recommended_internships = result_df[[
+        'company', 'similarity_score', 'profile', 'Location', 'Stipend', 'Skills and Perks']]
+    return final_recommended_internships.head(4)
 
 
 RESULT_TEMP = """
-<div style="width:90%;height:100%;margin:1px;padding:5px;position:relative;border-radius:5px;border-bottom-right-radius: 60px;
-box-shadow:0 0 15px 5px #ccc; background-color: #a8f0c6;
+<div style="width:90%;height:100%;margin:1px;padding:5px;position:relative;border-radius:5px;border-radius: 40px;
+box-shadow:5px 5px 4px 4px #ccc; background-color: gray;
   border-left: 5px solid #6c6c6c;">
-<h4>{}</h4>
-<p style="color:blue;"><span style="color:black;">📈Score::</span>{}</p>
-<p style="color:blue;"><span style="color:black;">🔗</span><a href="{}",target="_blank">Link</a></p>
-<p style="color:blue;"><span style="color:black;">💲Price:</span>{}</p>
-<p style="color:blue;"><span style="color:black;">🧑‍🎓👨🏽‍🎓 Students:</span>{}</p>
+<h4 style="color:black;font-weight:bold;margin:20px;">{}</h4>
+<p style="color:black;font-weight:bold;margin:20px;"><span style="color:#ccc;font-weight:bold;">Score::</span>{}</p>
+<p style="color:black;font-weight:bold;margin:20px;"><span style="color:#ccc;font-weight:bold;">Link::</span>{}</p>
+<p style="color:black;font-weight:bold;margin:20px;"><span style="color:#ccc;font-weight:bold;">Price::</span>{}</p>
+<p style="color:black;font-weight:bold;margin:20px;"><span style="color:#ccc;font-weight:bold;">👨🏽‍🎓 Students::</span>{}</p>
 
 </div>
 """
 
 RESULT_TEMP1 = """
-<div style="width:90%;height:100%;margin:1px;padding:5px;position:relative;border-radius:5px;border-bottom-right-radius: 60px;
-box-shadow:0 0 15px 5px #ccc; background-color: #a8f0c6;
-  border-left: 5px solid #6c6c6c;">
-<h4>{}</h4>
-<p style="color:blue;"><span style="color:black;">📈Score::</span>{}</p>
-<p style="color:blue;"><span style="color:black;">profile::</span>{}<span style="color:black;margin:20px;">location::</span>{}</p>
-<p style="color:blue;"><span style="color:black;">💲Stipend:</span>{}</p>
-<p style="color:blue;"><span style="color:black;">👨🏽‍🎓 Skills and Perks:</span>{}</p>
+<div style="width:90%;height:100%;margin:1px;margin-top:10px;padding:5px;position:relative;border-radius:40px;
+box-shadow:5px 5px 4px 4px #ccc; background-color: gray;">
+<h4 style="color:black;font-weight:bold;margin:20px;">{}</h4>
+<p style="color:black;font-weight:bold;margin:20px;"><span style="color:#ccc;font-weight:bold;">score::</span>{}<span style="color:#ccc;margin-left:30px;">profile::</span>{}</p>
+<p style="color:black;font-weight:bold;margin:20px;"><span style="color:#ccc;font-weight:bold;">location::</span>{}<span style="color:#ccc;margin-left:115px;">Stipend::</span>{}</p>
+<p style="color:black;font-weight:bold;margin:20px;"><span style="color:#ccc;font-weight:bold;">👨🏽‍🎓 Skills and Perks:</span>{}</p>
+
+</div>
+"""
+
+RESULT_TEMP2 = """
+<div style="width:80%;height:100%;margin:1px;margin-top:10px;padding:2vh;position:relative;border-radius:40px;
+box-shadow:3px 3px 3px 3px #DC143C; background-color: #ccc;">
+<h4 style="color:black;font-weight:bold;margin:20px;">{}</h4>
+<p style="color:#DC143C;font-weight:bold;margin:20px;"><span style="color:black;font-weight:bold;">score::</span>{}<span style="color:black;margin-left:30px;">profile::</span>{}</p>
+<p style="color:#DC143C;font-weight:bold;margin:20px;"><span style="color:black;font-weight:bold;">location::</span>{}<span style="color:black;margin-left:75px;">Stipend::</span>{}</p>
+<p style="color:#DC143C;font-weight:bold;margin:20px;"><span style="color:black;font-weight:bold;">👨🏽‍🎓 Skills and Perks:</span>{}</p>
 
 </div>
 """
@@ -108,6 +141,7 @@ def main():
 
     df1 = load_data("udemy_courses.csv")
     df2 = load_data("HYDERABAD.csv")
+    df8 = load_data("HYDERABAD.csv")
 
     if choice == "Home":
         st.subheader("Home")
@@ -167,9 +201,6 @@ def main():
                 try:
                     results = get_course_recommendation(
                         search_term, cosine_sim_mat, df4, num_of_rec)
-                    with st.expander("Results as JSON"):
-                        results_json = results.to_dict('index')
-                        st.write(results_json)
 
                     for row in results.iterrows():
                         rec_title = row[1][0]
@@ -179,7 +210,7 @@ def main():
                         rec_num_sub = row[1][4]
 
                         stc.html(RESULT_TEMP.format(rec_title, rec_score,
-                                 rec_url, rec_price, rec_num_sub), height=350)
+                                 rec_url, rec_price, rec_num_sub), height=300)
                 except:
                     results = "Not Found"
                     st.warning(results)
@@ -207,11 +238,8 @@ def main():
         if st.button("Recommend"):
             if search_term is not None:
                 try:
-                    results = get_internship_recommendation(
+                    results, idx = get_internship_recommendation(
                         search_term, cosine_sim_mat, df6, num_of_rec)
-                    with st.expander("Results as JSON"):
-                        results_json = results.to_dict('index')
-                        st.write(results_json)
 
                     for row in results.iterrows():
                         rec_company = row[1][0]
@@ -222,7 +250,21 @@ def main():
                         rec_skills = row[1][5]
 
                         stc.html(RESULT_TEMP1.format(rec_company, rec_profile,
-                                 rec_score, rec_location, rec_stipend, rec_skills), height=350)
+                                 rec_score, rec_location, rec_stipend, rec_skills), height=250)
+
+                        with st.expander("Show Similar Internships"):
+                            result = get_inter_internship_recommendation(
+                                idx, df8)
+                            for row in result.iterrows():
+                                rec_company1 = row[1][0]
+                                rec_profile1 = row[1][1]
+                                rec_score1 = row[1][2]
+                                rec_location1 = row[1][3]
+                                rec_stipend1 = row[1][4]
+                                rec_skills1 = row[1][5]
+                                stc.html(RESULT_TEMP2.format(rec_company1, rec_profile1,
+                                                             rec_score1, rec_location1, rec_stipend1, rec_skills1), height=250)
+
                 except:
                     results = "Not Found"
                     st.warning(results)
