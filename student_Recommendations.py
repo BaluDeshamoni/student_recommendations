@@ -130,7 +130,18 @@ def search_term_if_not_found(term, df):
 def search_term_if_not_found1(term, df):
     result_df = df[df['profile'].str.contains(term)]
     return result_df
+d1 = load_data("HYDERABAD.csv")
+d2 = load_data("MUMBAI.csv")
+d3 = load_data("BANGALORE.csv")
+d4 = load_data("DELHI.csv")
+d5 = load_data("KOLKATA.csv")
+d6 = load_data("INTERNATIONAL.csv")
 
+d7 = d1.append(d2, ignore_index=True)
+d8 = d7.append(d3, ignore_index=True)
+d9 = d8.append(d4, ignore_index=True)
+d10 = d9.append(d5, ignore_index=True)
+df2 = d10.append(d6, ignore_index=True)
 
 def main():
 
@@ -140,8 +151,7 @@ def main():
     choice = st.sidebar.selectbox("Menu", menu)
 
     df1 = load_data("udemy_courses.csv")
-    df2 = load_data("HYDERABAD.csv")
-    df8 = load_data("HYDERABAD.csv")
+    df8 = df2
 
     if choice == "Home":
         st.subheader("Home")
