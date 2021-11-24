@@ -4,6 +4,8 @@ import streamlit.components.v1 as stc
 import pandas as pd
 import neattext.functions as nfx
 
+import random
+
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -56,12 +58,17 @@ def get_internship_recommendation(profile, cosine_sim_mat, df, num_of_rec=10):
     result_df = df.iloc[selected_internship_indices]
     result_df['similarity_score'] = selected_internship_scores
     final_recommended_internships = result_df[[
-        'company', 'similarity_score', 'profile', 'Location', 'Stipend', 'Skills and Perks']]
+        'company', 'similarity_score', 'profile', 'Location', 'Stipend', 'Skills and Perks', "_id"]]
     return final_recommended_internships.head(num_of_rec), idx
 
 
 @st.cache
-def get_inter_internship_recommendation(idx, df):
+def get_inter_internship_recommendation(id, df):
+
+    internship_indices = pd.Series(
+        df.index, index=df['_id'])
+
+    idx = internship_indices[id]
 
     df['clean_Skills and Perks'] = df['Skills and Perks'].apply(
         nfx.remove_stopwords)
@@ -74,6 +81,7 @@ def get_inter_internship_recommendation(idx, df):
 
     sim_scores = list(enumerate(cosine_sim_mat[idx]))
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+
     selected_internship_indices = [i[0] for i in sim_scores[1:]]
     selected_internship_scores = [i[1] for i in sim_scores[1:]]
 
@@ -130,18 +138,7 @@ def search_term_if_not_found(term, df):
 def search_term_if_not_found1(term, df):
     result_df = df[df['profile'].str.contains(term)]
     return result_df
-d1 = load_data("HYDERABAD.csv")
-d2 = load_data("MUMBAI.csv")
-d3 = load_data("BANGALORE.csv")
-d4 = load_data("DELHI.csv")
-d5 = load_data("KOLKATA.csv")
-d6 = load_data("INTERNATIONAL.csv")
 
-d7 = d1.append(d2, ignore_index=True)
-d8 = d7.append(d3, ignore_index=True)
-d9 = d8.append(d4, ignore_index=True)
-d10 = d9.append(d5, ignore_index=True)
-df2 = d10.append(d6, ignore_index=True)
 
 def main():
 
@@ -151,7 +148,8 @@ def main():
     choice = st.sidebar.selectbox("Menu", menu)
 
     df1 = load_data("udemy_courses.csv")
-    df8 = df2
+    df2 = load_data("HYDERABAD.csv")
+    df8 = load_data("HYDERABAD.csv")
 
     if choice == "Home":
         st.subheader("Home")
@@ -258,13 +256,14 @@ def main():
                         rec_location = row[1][3]
                         rec_stipend = row[1][4]
                         rec_skills = row[1][5]
+                        rec_id = row[1][6]
 
                         stc.html(RESULT_TEMP1.format(rec_company, rec_profile,
                                  rec_score, rec_location, rec_stipend, rec_skills), height=250)
 
                         with st.expander("Show Similar Internships"):
                             result = get_inter_internship_recommendation(
-                                idx, df8)
+                                rec_id, df8)
                             for row in result.iterrows():
                                 rec_company1 = row[1][0]
                                 rec_profile1 = row[1][1]
